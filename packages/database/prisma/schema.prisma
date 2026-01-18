@@ -1,0 +1,257 @@
+// ConTrack Database Schema
+// Architecture: Fault-Tolerant, Non-Lending Investor Pool Model
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// AUTHENTICATION & RBAC
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+enum UserRole {
+  CLIENT
+  VENDOR
+  INVESTOR
+  ADMIN
+}
+
+model User {
+  id            String       @id @default(cuid())
+  email         String       @unique
+  name          String?
+  role          UserRole
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  // Relationships
+  clientContracts   Contract[]  @relation("ClientContracts")
+  vendorContracts   Contract[]  @relation("VendorContracts")
+  poolUnits         PoolUnit[]
+  events            Event[]
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// CONTRACTS & SETTLEMENTS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+enum ContractStatus {
+  DRAFT
+  ACTIVE
+  IN_VERIFICATION
+  SETTLED
+  DISPUTED
+  CANCELLED
+}
+
+model Contract {
+  id                String           @id @default(cuid())
+  title             String
+  description       String?
+  value             Float            // Total contract value
+  status            ContractStatus   @default(DRAFT)
+  
+  clientId          String
+  client            User             @relation("ClientContracts", fields: [clientId], references: [id])
+  
+  vendorId          String?
+  vendor            User?            @relation("VendorContracts", fields: [vendorId], references: [id])
+  
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  
+  // Settlement tracking
+  settledAt         DateTime?
+  settlementAmount  Float?
+  
+  // Relationships
+  exposures         ContractExposure[]
+  artifacts         Artifact[]
+  events            Event[]
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// INVESTOR POOL SYSTEM (NON-LENDING)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+enum PoolRiskCategory {
+  LOW_RISK
+  MEDIUM_RISK
+  HIGH_RISK
+  SECTORAL
+}
+
+model Pool {
+  id                String            @id @default(cuid())
+  name              String
+  description       String?
+  riskCategory      PoolRiskCategory  @default(MEDIUM_RISK)
+  
+  totalCapital      Float             @default(0)  // Current total capital
+  lockedCapital     Float             @default(0)  // Locked in exposures
+  availableCapital  Float             @default(0)  // Available for new exposures
+  
+  currentNAV        Float             @default(1.0) // Current NAV per unit
+  totalUnits        Float             @default(0)   // Total units issued
+  
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  
+  // Relationships
+  units             PoolUnit[]
+  exposures         ContractExposure[]
+  navHistory        PoolNAV[]
+}
+
+model PoolUnit {
+  id                String    @id @default(cuid())
+  poolId            String
+  pool              Pool      @relation(fields: [poolId], references: [id])
+  
+  investorId        String
+  investor          User      @relation(fields: [investorId], references: [id])
+  
+  units             Float     // Number of units held
+  purchaseNAV       Float     // NAV at time of purchase
+  purchaseAmount    Float     // Original capital invested
+  
+  createdAt         DateTime  @default(now())
+  
+  @@index([poolId, investorId])
+}
+
+model PoolNAV {
+  id                String    @id @default(cuid())
+  poolId            String
+  pool              Pool      @relation(fields: [poolId], references: [id])
+  
+  nav               Float     // NAV value
+  totalCapital      Float     // Snapshot of total capital
+  totalUnits        Float     // Snapshot of total units
+  
+  timestamp         DateTime  @default(now())
+  
+  @@index([poolId, timestamp])
+}
+
+enum ExposureStatus {
+  PENDING     // Awaiting activation
+  ACTIVE      // Currently underwriting
+  SETTLED     // Successfully settled
+  DEFAULTED   // Failed settlement
+  RECOVERED   // Partial/full recovery after default
+}
+
+model ContractExposure {
+  id                String          @id @default(cuid())
+  
+  poolId            String
+  pool              Pool            @relation(fields: [poolId], references: [id])
+  
+  contractId        String
+  contract          Contract        @relation(fields: [contractId], references: [id])
+  
+  exposureAmount    Float           // Amount pool is underwriting
+  status            ExposureStatus  @default(PENDING)
+  
+  // Economic tracking (NOT lending - settlement underwriting)
+  activationFee     Float?          // Platform fee at activation
+  delayPenalty      Float?          // Penalty if settlement delayed
+  recoveryAmount    Float?          // Amount recovered if defaulted
+  
+  createdAt         DateTime        @default(now())
+  settledAt         DateTime?
+  
+  @@index([poolId, status])
+  @@index([contractId])
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ARTIFACTS & EVENTS (Fault Tolerance)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+enum ArtifactType {
+  INTAKE_VALIDATION
+  SCORING_RESULT
+  VERIFICATION_PROOF
+  SETTLEMENT_OUTCOME
+  POOL_STATE
+  ERROR
+  WARNING
+}
+
+model Artifact {
+  id                String        @id @default(cuid())
+  type              ArtifactType
+  
+  contractId        String?
+  contract          Contract?     @relation(fields: [contractId], references: [id])
+  
+  data              Json          // JSON blob
+  version           Int           @default(1)
+  
+  createdAt         DateTime      @default(now())
+  
+  @@index([contractId, type])
+}
+
+enum EventType {
+  CONTRACT_CREATED
+  CONTRACT_ACTIVATED
+  CONTRACT_SETTLED
+  EXPOSURE_CREATED
+  EXPOSURE_SETTLED
+  EXPOSURE_DEFAULTED
+  POOL_INVESTMENT
+  POOL_REDEMPTION
+  NAV_UPDATED
+  USER_ACTION
+  SYSTEM_ERROR
+}
+
+model Event {
+  id                String      @id @default(cuid())
+  type              EventType
+  
+  userId            String?
+  user              User?       @relation(fields: [userId], references: [id])
+  
+  contractId        String?
+  contract          Contract?   @relation(fields: [contractId], references: [id])
+  
+  metadata          Json?       // Flexible event data
+  
+  timestamp         DateTime    @default(now())
+  
+  @@index([type, timestamp])
+  @@index([userId])
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// SYSTEM LOGS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+enum LogLevel {
+  INFO
+  WARN
+  ERROR
+  CRITICAL
+}
+
+model Log {
+  id                String      @id @default(cuid())
+  level             LogLevel
+  layer             String      // Which layer produced this log
+  message           String
+  metadata          Json?
+  
+  timestamp         DateTime    @default(now())
+  
+  @@index([level, timestamp])
+  @@index([layer])
+}

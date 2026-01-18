@@ -1,0 +1,15 @@
+{
+    "name": "contrack-backend",
+    "version": "0.0.1",
+    "private": true,
+    "workspaces": [
+        "packages/*"
+    ],
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "description": "Backend monorepo for ConTrack Platform"
+}

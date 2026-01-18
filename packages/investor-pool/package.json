@@ -1,0 +1,15 @@
+{
+    "name": "@contrack/investor-pool",
+    "version": "0.0.1",
+    "main": "index.ts",
+    "scripts": {
+        "test": "echo \"No tests yet\""
+    },
+    "dependencies": {
+        "@contrack/database": "*"
+    },
+    "devDependencies": {
+        "typescript": "^5.7.3",
+        "@types/node": "^22.13.1"
+    }
+}

@@ -1,178 +1,353 @@
-# ConTrack Frontend 🚀
+# ConTrack - Contract Management Platform
 
-**Intelligent Contract Management Platform** - Built with React, Vite, and TailwindCSS
+![ConTrack](https://img.shields.io/badge/Status-Live-success)
+![License](https://img.shields.io/badge/License-MIT-blue)
+![Vercel](https://img.shields.io/badge/Deployed-Vercel-black)
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/YOUR_USERNAME/contrack-frontend)
-
-## 🌟 Features
-
-- **Multi-Role Dashboards**: Client, Vendor, and Investor portals
-- **Payment Tracking System**: Milestone-based payment management
-- **Real-time Progress**: Live payment status updates
-- **Interactive Demos**: Explore the platform before signing up
-- **Modern UI/UX**: Premium design with smooth animations
-
-## 🎨 Screenshots
-
-**Landing Page** → **Client Dashboard** → **Payment Tracker** → **Milestone Timeline**
-
-## 🛠️ Tech Stack
-
-- **Frontend**: React 19, TypeScript
-- **Build Tool**: Vite 6
-- **Styling**: TailwindCSS (via CDN)
-- **Animations**: Framer Motion
-- **Icons**: Lucide React
-- **Deployment**: Vercel
-
-## 📦 Installation
-
-```bash
-# Clone the repository
-git clone https://github.com/YOUR_USERNAME/contrack-frontend.git
-cd contrack-frontend
-
-# Install dependencies
-npm install
-
-# Start development server
-npm run dev
-```
-
-The app will be available at `http://localhost:3000`
-
-## 🚀 Deploy to Vercel
-
-### Quick Deploy (Recommended)
-
-1. Push this repo to GitHub
-2. Visit [vercel.com/new](https://vercel.com/new)
-3. Import your repository
-4. Click **Deploy** (settings are pre-configured!)
-
-### Via Vercel CLI
-
-```bash
-npm install -g vercel
-vercel --prod
-```
-
-See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed instructions.
-
-## 📁 Project Structure
-
-```
-contrack/
-├── components/          # React components
-│   ├── ClientDashboard.tsx
-│   ├── VendorDashboard.tsx
-│   ├── InvestorDashboard.tsx
-│   ├── PaymentTracker.tsx
-│   ├── PaymentScheduleView.tsx
-│   └── ...
-├── App.tsx             # Main app component
-├── types.ts            # TypeScript type definitions
-├── index.css           # Base styles
-├── index.html          # HTML template
-├── vite.config.ts      # Vite configuration
-└── vercel.json         # Vercel deployment config
-```
-
-## 🎯 Available Scripts
-
-```bash
-npm run dev      # Start development server
-npm run build    # Build for production
-npm run preview  # Preview production build
-```
-
-## 🔧 Configuration
-
-### Environment Variables
-
-Create a `.env.local` file (optional):
-
-```bash
-GEMINI_API_KEY=your_api_key_here
-```
-
-For Vercel deployment, add this in **Settings → Environment Variables**.
-
-## 🌐 Features Breakdown
-
-### Landing Page
-- Hero section with CTAs
-- Feature showcase
-- Platform overview
-- Testimonials
-
-### Client Dashboard
-- Contract creation
-- Payment schedule management
-- Milestone tracking
-- Payment history
-
-### Vendor Dashboard
-- Contract overview
-- Payment status monitoring
-- Milestone completion tracking
-
-### Investor Dashboard
-- Investment pool analytics
-- Portfolio tracking
-- Performance metrics
-
-### Payment System
-- **Tracker**: Real-time payment progress with visual indicators
-- **Schedule**: Timeline view of payment milestones
-- **History**: Complete transaction records
-
-## 📝 Usage
-
-### Login Flow
-
-1. Click **"Get Started"** on the landing page
-2. Select your role: Client, Vendor, or Investor
-3. Enter email and login
-
-### Demo Flow
-
-1. Click **"Watch Demo"** on the landing page
-2. Explore the interactive payment system
-3. Test "Mark Paid" functionality
-4. View real-time progress updates
-
-## 🎨 Theming
-
-The platform uses a premium white theme with green accents:
-- **Primary**: Green (#4e877d, #3b6c64)
-- **Background**: White (#ffffff, #fafaf9)
-- **Text**: Dark gray (#1c1917)
-
-## 🐛 Troubleshooting
-
-### Build fails on Vercel
-- Ensure `vercel.json` exists with proper configuration
-- Check that all dependencies are in `package.json`
-
-### Styles not loading
-- Verify `index.css` exists
-- Check Tailwind CDN is loaded in `index.html`
-
-See [DEPLOYMENT.md](./DEPLOYMENT.md) for more troubleshooting tips.
-
-## 📄 License
-
-MIT License - feel free to use this project for your needs!
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## 📧 Contact
-
-For questions or support, please open an issue on GitHub.
+**Live Demo**: https://con-track-ioin.vercel.app/
 
 ---
 
-Built with ❤️ for the hackathon
+## Overview
+
+ConTrack is a premium contract management platform that transforms static agreements into dynamic financial workflows. Create, manage, and track contracts with milestone-based payments, real-time updates, and intelligent event tracking.
+
+### Key Features
+
+✨ **Hero-Styled UI** - Serif headlines, pill buttons, soft shadows, premium animations  
+📝 **Contract Creation** - Guided form with validation and milestone configuration  
+💰 **Milestone Payments** - Dynamic payment schedules with percentage tracking  
+🔔 **Event Tracking** - Audit log for all contract actions and state changes  
+💾 **Database Persistence** - PostgreSQL via Prisma ORM for serverless deployment  
+⚡️ **Serverless API** - Vercel serverless functions for scalable backend  
+
+---
+
+## Tech Stack
+
+**Frontend**:
+- React 19 + TypeScript
+- Vite (build tool)
+- Framer Motion (animations)
+- Lucide React (icons)
+- Tailwind CSS (styling)
+
+**Backend**:
+- Vercel Serverless Functions
+- Prisma ORM
+- PostgreSQL (Neon/Supabase/Vercel Postgres)
+
+**Deployment**:
+- Vercel (auto-deploy from GitHub)
+- GitHub Actions (CI/CD)
+
+---
+
+## Quick Start
+
+### Prerequisites
+
+- Node.js 18+ 
+- PostgreSQL database (see [Database Setup](#database-setup))
+- Git
+
+### 1. Clone Repository
+
+```bash
+git clone https://github.com/Achira621/ConTrack.git
+cd ConTrack/frontend/contrack
+```
+
+### 2. Install Dependencies
+
+```bash
+npm install
+```
+
+### 3. Setup Database
+
+Create `.env` file:
+
+```env
+DATABASE_URL="postgresql://user:password@host:5432/contrack?schema=public"
+```
+
+Run migrations:
+
+```bash
+npx prisma generate
+npx prisma db push
+```
+
+See [DATABASE_SETUP.md](./DATABASE_SETUP.md) for detailed instructions.
+
+### 4. Run Development Server
+
+```bash
+npm run dev
+```
+
+App runs at `http://localhost:5173`
+
+---
+
+## Database Setup
+
+### Quick Option: Neon (Recommended)
+
+1. Sign up at [neon.tech](https://neon.tech)
+2. Create new project
+3. Copy connection string
+4. Add to `.env` as `DATABASE_URL`
+
+### Alternatives
+
+- **Supabase**: https://supabase.com
+- **Vercel Postgres**: Built into Vercel dashboard
+
+See [DATABASE_SETUP.md](./DATABASE_SETUP.md) for full guide.
+
+---
+
+## Deployment
+
+### Deploy to Vercel
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Achira621/ConTrack)
+
+1. **Connect GitHub**: Import repository
+2. **Add Environment Variables**:
+   - `DATABASE_URL` - Your PostgreSQL connection string
+3. **Deploy**: Auto-deploys on push to `main`
+
+### Environment Variables
+
+Required for Vercel deployment:
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `DATABASE_URL` | PostgreSQL connection string | `postgresql://...` |
+
+---
+
+## Project Structure
+
+```
+contrack/
+├── api/                    # Vercel serverless functions
+│   ├── auth.ts            # User authentication
+│   └── contracts.ts       # Contract CRUD operations
+├── components/            # React components
+│   ├── Hero.tsx          # Landing page hero
+│   ├── ContractCreationModal.tsx  # Contract form
+│   ├── ClientDashboard.tsx        # Client view
+│   └── ...
+├── lib/                   # Utilities
+│   └── prisma.ts         # Prisma client singleton
+├── prisma/               # Database schema
+│   └── schema.prisma     # Prisma schema definition
+├── types.ts              # TypeScript types
+├── App.tsx               # Main app component
+└── vercel.json           # Vercel configuration
+```
+
+---
+
+## API Endpoints
+
+### POST `/api/auth`
+
+Authenticate or create user.
+
+**Request**:
+```json
+{
+  "email": "client@example.com",
+  "role": "CLIENT"
+}
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "user": {
+    "id": "clx...",
+    "email": "client@example.com",
+    "name": "client",
+    "role": "CLIENT"
+  }
+}
+```
+
+### POST `/api/contracts`
+
+Create new contract with optional milestones.
+
+**Request**:
+```json
+{
+  "title": "Website Redesign",
+  "description": "Full UI overhaul",
+  "clientId": "clx...",
+  "vendorEmail": "vendor@example.com",
+  "value": 15000,
+  "milestones": [
+    { "name": "Design", "percentage": 40, "description": "UI mockups" },
+    { "name": "Development", "percentage": 60, "description": "Implementation" }
+  ]
+}
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "contract": { ... }
+}
+```
+
+### GET `/api/contracts?userId={userId}`
+
+Get all contracts for user.
+
+**Response**:
+```json
+{
+  "contracts": [
+    {
+      "id": "clx...",
+      "title": "Website Redesign",
+      "value": 15000,
+      "status": "DRAFT",
+      "paymentSchedules": [ ... ]
+    }
+  ]
+}
+```
+
+---
+
+## Features Walkthrough
+
+### 1. Contract Creation
+
+- Click "Create New Contract" in dashboard
+- Fill form with title, parties, value
+- Optionally enable milestone-based payments
+- Add milestones (must total 100%)
+- Submit → Contract created in database
+
+### 2. Milestone Configuration
+
+- Toggle "Enable Milestone-Based Payments"
+- Add milestones with name, percentage, description
+- System validates total = 100%
+- Creates `PaymentSchedule` records linked to contract
+
+### 3. Dashboard
+
+- View all contracts (client or vendor perspective)
+- Real-time stats (active contracts, total value, settled)
+- Recent contracts list with status badges
+- Loading states and error handling
+
+---
+
+## Development
+
+### Run Tests
+
+```bash
+npm run vitest  # (if tests are added)
+```
+
+### Database Management
+
+```bash
+# View database in Prisma Studio
+npx prisma studio
+
+# Reset database
+npx prisma db push --force-reset
+
+# Generate Prisma Client after schema changes
+npx prisma generate
+```
+
+### Build for Production
+
+```bash
+npm run build
+```
+
+---
+
+## Architecture
+
+### Frontend → API → Database Flow
+
+```
+User Action (Create Contract)
+    ↓
+ContractCreationModal validates form
+    ↓
+POST /api/contracts with data
+    ↓
+Serverless function receives request
+    ↓
+Prisma creates Contract + PaymentSchedules + Events
+    ↓
+Returns contract data
+    ↓
+Dashboard refreshes and displays new contract
+```
+
+### Event-Driven Architecture
+
+All actions create `Event` records:
+- `CONTRACT_CREATED`
+- `PAYMENT_SCHEDULE_CREATED`
+- `CONTRACT_ACTIVATED`
+- `PAYMENT_COMPLETED`
+
+Events provide audit trail and enable future notifications.
+
+---
+
+## Contributing
+
+1. Fork repository
+2. Create feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
+5. Open Pull Request
+
+---
+
+## License
+
+MIT License - see LICENSE file for details
+
+---
+
+## Support
+
+- **Issues**: https://github.com/Achira621/ConTrack/issues
+- **Discussions**: https://github.com/Achira621/ConTrack/discussions
+
+---
+
+## Roadmap
+
+- [ ] Real authentication (NextAuth.js or Clerk)
+- [ ] Payment integration (Stripe/Razorpay)
+- [ ] Email notifications
+- [ ] Contract templates
+- [ ] PDF generation
+- [ ] Multi-currency support
+- [ ] Mobile app (React Native)
+
+---
+
+Built with ❤️ for hackathons and beyond.

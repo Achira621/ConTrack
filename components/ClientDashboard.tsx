@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FileText, TrendingUp, Users, DollarSign, Calendar } from 'lucide-react';
+import { FileText, TrendingUp, Users, DollarSign, Calendar, Loader2, AlertCircle } from 'lucide-react';
 import { ContractCreationModal } from './ContractCreationModal';
 import type { User, Contract } from '../types';
 
@@ -12,35 +12,96 @@ interface ClientDashboardProps {
 export const ClientDashboard: React.FC<ClientDashboardProps> = ({ user, onLogout }) => {
     const [contracts, setContracts] = useState<Contract[]>([]);
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-    // Load contracts from localStorage on mount
+    // Load contracts from API
     useEffect(() => {
-        const stored = localStorage.getItem('contracts');
-        if (stored) {
-            try {
-                setContracts(JSON.parse(stored));
-            } catch (e) {
-                console.error('Failed to load contracts', e);
-            }
-        }
-    }, []);
+        const fetchContracts = async () => {
+            setLoading(true);
+            setError(null);
 
-    const handleCreateContract = (contractData: any) => {
-        const newContract: Contract = {
-            id: crypto.randomUUID(),
-            title: contractData.title,
-            description: contractData.description,
-            value: contractData.value,
-            status: 'DRAFT',
-            clientId: user.id,
-            vendorId: contractData.vendorEmail, // In real app, would resolve to ID
-            createdAt: new Date().toISOString(),
+            try {
+                const res = await fetch(`/api/contracts?userId=${user.id}`);
+
+                if (!res.ok) {
+                    throw new Error('Failed to load contracts');
+                }
+
+                const data = await res.json();
+                setContracts(data.contracts || []);
+            } catch (err) {
+                console.error('Failed to load contracts:', err);
+                setError(err instanceof Error ? err.message : 'Failed to load contracts');
+
+                // Fallback to localStorage if API fails
+                const stored = localStorage.getItem('contracts');
+                if (stored) {
+                    try {
+                        setContracts(JSON.parse(stored));
+                    } catch (e) {
+                        console.error('Failed to parse stored contracts', e);
+                    }
+                }
+            } finally {
+                setLoading(false);
+            }
         };
 
-        const updated = [...contracts, newContract];
-        setContracts(updated);
-        localStorage.setItem('contracts', JSON.stringify(updated));
-        setShowCreateModal(false);
+        fetchContracts();
+    }, [user.id]);
+
+    const handleCreateContract = async (contractData: any) => {
+        setError(null);
+
+        try {
+            const res = await fetch('/api/contracts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ...contractData,
+                    clientId: user.id,
+                }),
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.error || 'Failed to create contract');
+            }
+
+            const result = await res.json();
+
+            if (result.success) {
+                // Refresh contracts list
+                const refreshRes = await fetch(`/api/contracts?userId=${user.id}`);
+                if (refreshRes.ok) {
+                    const data = await refreshRes.json();
+                    setContracts(data.contracts || []);
+                }
+            }
+
+            setShowCreateModal(false);
+        } catch (err) {
+            console.error('Failed to create contract:', err);
+            setError(err instanceof Error ? err.message : 'Failed to create contract');
+
+            // Fallback to localStorage
+            const newContract: Contract = {
+                id: crypto.randomUUID(),
+                title: contractData.title,
+                description: contractData.description,
+                value: contractData.value,
+                status: 'DRAFT',
+                clientId: user.id,
+                vendorId: contractData.vendorEmail,
+                createdAt: new Date().toISOString(),
+            };
+
+            const updated = [...contracts, newContract];
+            setContracts(updated);
+            localStorage.setItem('contracts', JSON.stringify(updated));
+            setShowCreateModal(false);
+        }
     };
 
     const activeContracts = contracts.filter(c => c.status === 'ACTIVE').length;
@@ -90,6 +151,23 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ user, onLogout
 
             {/* Content */}
             <div className="max-w-7xl mx-auto p-6 space-y-6">
+                {/* Error Banner */}
+                {error && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3">
+                        <AlertCircle className="w-5 h-5 text-red-600" />
+                        <div className="flex-1">
+                            <p className="text-sm font-medium text-red-900">Error</p>
+                            <p className="text-sm text-red-700">{error}</p>
+                        </div>
+                        <button
+                            onClick={() => setError(null)}
+                            className="text-red-600 hover:text-red-800"
+                        >
+                            ×
+                        </button>
+                    </div>
+                )}
+
                 {/* Stats Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     {stats.map((stat, idx) => (
@@ -138,7 +216,13 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ user, onLogout
                 {/* Recent Contracts */}
                 <div className="bg-white rounded-xl p-6 border border-stone-200 shadow-sm">
                     <h2 className="text-xl font-semibold text-stone-900 mb-4">Recent Contracts</h2>
-                    {contracts.length === 0 ? (
+
+                    {loading ? (
+                        <div className="flex flex-col items-center justify-center py-12 text-stone-400">
+                            <Loader2 className="w-8 h-8 animate-spin mb-3" />
+                            <p className="text-sm">Loading contracts...</p>
+                        </div>
+                    ) : contracts.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-12 text-stone-400 bg-stone-50 rounded-lg border border-stone-200 border-dashed">
                             <FileText className="w-12 h-12 mb-3 opacity-20" />
                             <p className="text-sm">No contracts yet. Create your first contract to get started!</p>

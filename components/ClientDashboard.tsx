@@ -29,7 +29,12 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ user, onLogout
                 }
 
                 const data = await res.json();
-                setContracts(data.contracts || []);
+
+                if (data.success && data.contracts) {
+                    setContracts(data.contracts);
+                } else {
+                    throw new Error(data.error || 'Invalid response format');
+                }
             } catch (err) {
                 console.error('Failed to load contracts:', err);
                 setError(err instanceof Error ? err.message : 'Failed to load contracts');
@@ -71,12 +76,16 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ user, onLogout
 
             const result = await res.json();
 
-            if (result.success) {
-                // Refresh contracts list
-                const refreshRes = await fetch(`/api/contracts?userId=${user.id}`);
-                if (refreshRes.ok) {
-                    const data = await refreshRes.json();
-                    setContracts(data.contracts || []);
+            if (!result.success) {
+                throw new Error(result.error || 'Failed to create contract');
+            }
+
+            // Refresh contracts list
+            const refreshRes = await fetch(`/api/contracts?userId=${user.id}`);
+            if (refreshRes.ok) {
+                const data = await refreshRes.json();
+                if (data.success && data.contracts) {
+                    setContracts(data.contracts);
                 }
             }
 

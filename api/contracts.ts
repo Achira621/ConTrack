@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import prisma from '../lib/prisma';
+import prisma, { checkDatabaseConnection } from '../lib/prisma';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Set JSON content type
@@ -16,6 +16,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
+    }
+
+    // Validate database connection before processing requests
+    const dbCheck = await checkDatabaseConnection();
+    if (!dbCheck.connected) {
+        console.error('Database connection failed:', dbCheck.error);
+        return res.status(503).json({
+            success: false,
+            error: 'Database connection unavailable',
+            details: process.env.NODE_ENV === 'development' ? dbCheck.error : undefined,
+        });
     }
 
     try {
@@ -210,9 +221,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
     } catch (error) {
         console.error('API Error:', error);
+
+        // Log detailed error information for debugging
+        if (error instanceof Error) {
+            console.error('Error name:', error.name);
+            console.error('Error message:', error.message);
+            console.error('Error stack:', error.stack);
+        }
+
+        // Always return valid JSON
         return res.status(500).json({
             success: false,
             error: error instanceof Error ? error.message : 'Internal server error',
+            errorType: error instanceof Error ? error.name : 'UnknownError',
+            timestamp: new Date().toISOString(),
         });
     }
 }

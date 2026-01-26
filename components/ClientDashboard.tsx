@@ -25,10 +25,35 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ user, onLogout
                 const res = await fetch(`/api/contracts?userId=${user.id}`);
 
                 if (!res.ok) {
-                    throw new Error('Failed to load contracts');
+                    // Try to parse error response
+                    let errorMessage = `Server error (${res.status})`;
+                    try {
+                        const contentType = res.headers.get('content-type');
+                        if (contentType?.includes('application/json')) {
+                            const errorData = await res.json();
+                            errorMessage = errorData.error || errorMessage;
+                        } else {
+                            // Non-JSON response (likely HTML error page)
+                            errorMessage = 'Server error - check Vercel logs';
+                        }
+                    } catch (parseErr) {
+                        console.error('Error parsing error response:', parseErr);
+                    }
+                    throw new Error(errorMessage);
                 }
 
-                const data = await res.json();
+                // Safely parse JSON response
+                let data;
+                try {
+                    const contentType = res.headers.get('content-type');
+                    if (!contentType?.includes('application/json')) {
+                        throw new Error('Server returned non-JSON response');
+                    }
+                    data = await res.json();
+                } catch (parseErr) {
+                    console.error('JSON parse error:', parseErr);
+                    throw new Error('Invalid server response - check Vercel logs');
+                }
 
                 if (data.success && data.contracts) {
                     setContracts(data.contracts);
@@ -37,7 +62,8 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ user, onLogout
                 }
             } catch (err) {
                 console.error('Failed to load contracts:', err);
-                setError(err instanceof Error ? err.message : 'Failed to load contracts');
+                const errorMessage = err instanceof Error ? err.message : 'Failed to load contracts';
+                setError(errorMessage);
 
                 // Fallback to localStorage if API fails
                 const stored = localStorage.getItem('contracts');
@@ -70,11 +96,33 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ user, onLogout
             });
 
             if (!res.ok) {
-                const errorData = await res.json();
-                throw new Error(errorData.error || 'Failed to create contract');
+                let errorMessage = `Server error (${res.status})`;
+                try {
+                    const contentType = res.headers.get('content-type');
+                    if (contentType?.includes('application/json')) {
+                        const errorData = await res.json();
+                        errorMessage = errorData.error || errorMessage;
+                    } else {
+                        errorMessage = 'Server error - check Vercel logs and database connection';
+                    }
+                } catch (parseErr) {
+                    console.error('Error parsing error response:', parseErr);
+                }
+                throw new Error(errorMessage);
             }
 
-            const result = await res.json();
+            // Safely parse JSON response
+            let result;
+            try {
+                const contentType = res.headers.get('content-type');
+                if (!contentType?.includes('application/json')) {
+                    throw new Error('Server returned non-JSON response');
+                }
+                result = await res.json();
+            } catch (parseErr) {
+                console.error('JSON parse error:', parseErr);
+                throw new Error('Invalid server response - check Vercel logs');
+            }
 
             if (!result.success) {
                 throw new Error(result.error || 'Failed to create contract');

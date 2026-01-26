@@ -2,6 +2,9 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import prisma from '../lib/prisma';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+    // Set JSON content type
+    res.setHeader('Content-Type', 'application/json');
+
     // Enable CORS
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -12,26 +15,34 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     );
 
     if (req.method === 'OPTIONS') {
-        res.status(200).end();
-        return;
+        return res.status(200).end();
     }
 
     try {
         if (req.method === 'POST') {
             // Create new contract
-            const { title, description, clientId, vendorEmail, value, milestones, startDate, endDate } = req.body;
+            const { title, description, clientId, vendorEmail, value, milestones } = req.body;
 
             // Validation
             if (!title || title.length < 3) {
-                return res.status(400).json({ error: 'Title is required (minimum 3 characters)' });
+                return res.status(400).json({
+                    success: false,
+                    error: 'Title is required (minimum 3 characters)'
+                });
             }
 
             if (!clientId) {
-                return res.status(400).json({ error: 'Client ID is required' });
+                return res.status(400).json({
+                    success: false,
+                    error: 'Client ID is required'
+                });
             }
 
             if (!value || parseFloat(value) <= 0) {
-                return res.status(400).json({ error: 'Contract value must be greater than 0' });
+                return res.status(400).json({
+                    success: false,
+                    error: 'Contract value must be greater than 0'
+                });
             }
 
             // Find or create vendor by email
@@ -70,6 +81,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     // Delete the contract since milestone validation failed
                     await prisma.contract.delete({ where: { id: contract.id } });
                     return res.status(400).json({
+                        success: false,
                         error: `Payment milestones must sum to 100% (current: ${totalPercentage}%)`,
                     });
                 }
@@ -148,7 +160,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             const { userId } = req.query;
 
             if (!userId || typeof userId !== 'string') {
-                return res.status(400).json({ error: 'User ID is required' });
+                return res.status(400).json({
+                    success: false,
+                    error: 'User ID is required'
+                });
             }
 
             const contracts = await prisma.contract.findMany({
@@ -183,13 +198,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 orderBy: { createdAt: 'desc' },
             });
 
-            return res.status(200).json({ contracts });
+            return res.status(200).json({
+                success: true,
+                contracts
+            });
         } else {
-            return res.status(405).json({ error: 'Method not allowed' });
+            return res.status(405).json({
+                success: false,
+                error: 'Method not allowed'
+            });
         }
     } catch (error) {
         console.error('API Error:', error);
         return res.status(500).json({
+            success: false,
             error: error instanceof Error ? error.message : 'Internal server error',
         });
     }

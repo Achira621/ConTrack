@@ -2,6 +2,9 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import prisma from '../lib/prisma';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+    // Set JSON content type
+    res.setHeader('Content-Type', 'application/json');
+
     // Enable CORS
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -12,8 +15,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     );
 
     if (req.method === 'OPTIONS') {
-        res.status(200).end();
-        return;
+        return res.status(200).end();
     }
 
     try {
@@ -22,7 +24,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             const { email, role } = req.body;
 
             if (!email || !role) {
-                return res.status(400).json({ error: 'Email and role are required' });
+                return res.status(400).json({
+                    success: false,
+                    error: 'Email and role are required'
+                });
             }
 
             const user = await prisma.user.upsert({
@@ -32,7 +37,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     role,
                     name: email.split('@')[0],
                 },
-                update: {}, // Don't update on subsequent logins
+                update: {},
             });
 
             return res.status(200).json({
@@ -45,11 +50,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 },
             });
         } else {
-            return res.status(405).json({ error: 'Method not allowed' });
+            return res.status(405).json({
+                success: false,
+                error: 'Method not allowed'
+            });
         }
     } catch (error) {
         console.error('Auth Error:', error);
         return res.status(500).json({
+            success: false,
             error: error instanceof Error ? error.message : 'Internal server error',
         });
     }

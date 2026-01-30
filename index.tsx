@@ -1,5 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
+import { NeonAuthUIProvider } from '@neondatabase/auth-ui';
+import { neonClient } from './lib/neonAuth';
 import App from './App';
 
 const rootElement = document.getElementById('root');
@@ -10,6 +13,10 @@ if (!rootElement) {
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <App />
+    <BrowserRouter>
+      <NeonAuthUIProvider client={neonClient}>
+        <App />
+      </NeonAuthUIProvider>
+    </BrowserRouter>
   </React.StrictMode>
 );

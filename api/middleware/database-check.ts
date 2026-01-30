@@ -1,13 +1,14 @@
 // Middleware to ensure database is connected before processing any requests
 // Add this to your API routes to enforce database connectivity
 
-import { prisma } from '../packages/database';
+import { VercelRequest, VercelResponse } from '@vercel/node';
+import { prisma } from '../../packages/database';
 
 let isConnected = false;
 let lastCheckTime = 0;
 const CHECK_INTERVAL = 30000; // 30 seconds
 
-export async function ensureDatabaseConnection(req, res, next) {
+export async function ensureDatabaseConnection(req: VercelRequest, res: VercelResponse, next?: () => void) {
     const now = Date.now();
 
     // Check connection status every 30 seconds
@@ -40,7 +41,7 @@ export async function checkDatabaseConnection() {
     try {
         await prisma.$queryRaw`SELECT 1`;
         return { connected: true, error: null };
-    } catch (error) {
+    } catch (error: any) {
         return {
             connected: false,
             error: error.message,

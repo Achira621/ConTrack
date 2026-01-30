@@ -8,12 +8,27 @@ Modular backend for the ConTrack Platform using a fault-tolerant layered archite
 
 - **database**: Prisma schema + client (PostgreSQL)
 - **intake**: Input validation with Zod
-- **investor-pool**: Non-lending Unit/NAV pool management
-- **settlement**: Contract finalization & payout calculation
-- **scoring**: [Placeholder - Add contract scoring logic]
-- **verification**: [Placeholder - Add proof verification]
-- **notification**: [Placeholder - Add event notifications]
-- **reporting**: [Placeholder - Add dashboard data]
+- **contracts**: Contract creation & activation (F1)
+- **scoring**: ConScore risk assessment (F2)
+- **verification**: Proof validation (F3)
+- **settlement**: Payout calculation (F4)
+- **investor-pool**: Non-lending Unit/NAV pool (F5)
+- **recovery**: Payment recovery tracking (F6)
+- **reporting**: Metrics & analytics (F7)
+- **notification**: Event-driven messaging (F9)
+
+### Features Implemented
+
+✅ **F1: Contract Creation** - Vendor-to-Client contract with activation requirement  
+✅ **F2: Risk Scoring (ConScore)** - AI-inspired 0-100 scoring with risk tiers  
+✅ **F3: Proof Verification** - Evidence-based validation + manual fallback  
+✅ **F4: Settlement Logic** - On-time/delayed/default flows with pool integration  
+✅ **F5: Investor Pool** - Mutual-fund style Unit/NAV (RBI/SEBI compliant)  
+✅ **F6: Recovery** - Client payment recovery with NAV adjustments  
+✅ **F7: Reporting** - Vendor/Client/Investor/Pool metrics  
+✅ **F8: Dashboards** - RBAC UI (Frontend)  
+✅ **F9: Notifications** - Silent-fail messaging  
+✅ **F10: Database** - Complete Prisma schema  
 
 ## Setup
 

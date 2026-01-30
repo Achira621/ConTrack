@@ -69,10 +69,16 @@ model Contract {
   settledAt         DateTime?
   settlementAmount  Float?
   
+  // Payment tracking
+  totalPaid         Float            @default(0)
+  remainingAmount   Float?
+  
   // Relationships
   exposures         ContractExposure[]
   artifacts         Artifact[]
   events            Event[]
+  paymentSchedules  PaymentSchedule[]
+  payments          Payment[]
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -210,6 +216,11 @@ enum EventType {
   POOL_INVESTMENT
   POOL_REDEMPTION
   NAV_UPDATED
+  PAYMENT_CREATED
+  PAYMENT_COMPLETED
+  PAYMENT_FAILED
+  PAYMENT_SCHEDULE_CREATED
+  MILESTONE_REACHED
   USER_ACTION
   SYSTEM_ERROR
 }
@@ -230,6 +241,66 @@ model Event {
   
   @@index([type, timestamp])
   @@index([userId])
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// PAYMENT TRACKING SYSTEM
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REFUNDED
+  CANCELLED
+}
+
+model PaymentSchedule {
+  id              String    @id @default(cuid())
+  contractId      String
+  contract        Contract  @relation(fields: [contractId], references: [id])
+  
+  milestoneName   String    // e.g., "Initial Deposit", "Mid-Project", "Final Payment"
+  description     String?
+  amount          Float
+  percentage      Float     // Percentage of total contract value
+  dueDate         DateTime?
+  order           Int       // Sequence order
+  
+  createdAt       DateTime  @default(now())
+  
+  payments        Payment[]
+  
+  @@index([contractId])
+}
+
+model Payment {
+  id                String          @id @default(cuid())
+  contractId        String
+  contract          Contract        @relation(fields: [contractId], references: [id])
+  
+  scheduleId        String?
+  schedule          PaymentSchedule? @relation(fields: [scheduleId], references: [id])
+  
+  amount            Float
+  status            PaymentStatus   @default(PENDING)
+  
+  payerId           String          // Client making payment
+  payeeId           String          // Vendor receiving payment
+  
+  paymentMethod     String?
+  transactionId     String?         // External payment gateway reference
+  
+  paidAt            DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  
+  metadata          Json?           // Additional payment details
+  
+  @@index([contractId, status])
+  @@index([payerId])
+  @@index([payeeId])
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

@@ -1,0 +1,14 @@
+{
+    "name": "@contrack/contracts",
+    "version": "0.0.1",
+    "main": "index.ts",
+    "dependencies": {
+        "@contrack/database": "*",
+        "@contrack/intake": "*",
+        "@contrack/scoring": "*"
+    },
+    "devDependencies": {
+        "typescript": "^5.7.3",
+        "@types/node": "^22.13.1"
+    }
+}

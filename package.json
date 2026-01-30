@@ -11,5 +11,8 @@
     "keywords": [],
     "author": "",
     "license": "ISC",
-    "description": "Backend monorepo for ConTrack Platform"
+    "description": "Backend monorepo for ConTrack Platform",
+    "devDependencies": {
+        "@vercel/node": "^5.5.28"
+    }
 }

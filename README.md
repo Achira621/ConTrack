@@ -10,7 +10,7 @@
 
 ## Overview
 
-ConTrack is a premium contract management platform that transforms static agreements into dynamic financial workflows. Create, manage, and track contracts with milestone-based payments, real-time updates, and intelligent event tracking.
+ConTrack is a premium contract management platform that transforms static agreements into dynamic financial workflows. Built with a modular backend architecture and modern frontend, it creates, manages, and tracks contracts with milestone-based payments, real-time updates, and intelligent event tracking.
 
 ### Key Features
 
@@ -20,6 +20,9 @@ ConTrack is a premium contract management platform that transforms static agreem
 🔔 **Event Tracking** - Audit log for all contract actions and state changes  
 💾 **Database Persistence** - PostgreSQL via Prisma ORM for serverless deployment  
 ⚡️ **Serverless API** - Vercel serverless functions for scalable backend  
+🎯 **RBAC System** - CLIENT, VENDOR, INVESTOR, ADMIN role-based access control  
+📊 **Risk Scoring** - ConScore AI-inspired 0-100 scoring with risk tiers  
+🏦 **Investor Pool** - Non-lending mutual-fund style Unit/NAV pool (RBI/SEBI compliant)  
 
 ---
 
@@ -30,16 +33,17 @@ ConTrack is a premium contract management platform that transforms static agreem
 - Vite (build tool)
 - Framer Motion (animations)
 - Lucide React (icons)
-- Tailwind CSS (styling)
+- Modern CSS (no Tailwind needed)
 
 **Backend**:
 - Vercel Serverless Functions
 - Prisma ORM
 - PostgreSQL (Neon/Supabase/Vercel Postgres)
+- Modular package architecture
 
 **Deployment**:
 - Vercel (auto-deploy from GitHub)
-- GitHub Actions (CI/CD)
+- GitHub Actions (CI/CD ready)
 
 ---
 
@@ -55,7 +59,7 @@ ConTrack is a premium contract management platform that transforms static agreem
 
 ```bash
 git clone https://github.com/Achira621/ConTrack.git
-cd ConTrack/frontend/contrack
+cd ConTrack
 ```
 
 ### 2. Install Dependencies
@@ -109,6 +113,38 @@ See [DATABASE_SETUP.md](./DATABASE_SETUP.md) for full guide.
 
 ---
 
+## Architecture
+
+### Backend Packages
+
+The backend follows a fault-tolerant layered architecture with modular packages:
+
+- **database**: Prisma schema + client (PostgreSQL)
+- **intake**: Input validation with Zod
+- **contracts**: Contract creation & activation (F1)
+- **scoring**: ConScore risk assessment (F2)
+- **verification**: Proof validation (F3)
+- **settlement**: Payout calculation (F4)
+- **investor-pool**: Non-lending Unit/NAV pool (F5)
+- **recovery**: Payment recovery tracking (F6)
+- **reporting**: Metrics & analytics (F7)
+- **notification**: Event-driven messaging (F9)
+
+### Features Implemented
+
+✅ **F1: Contract Creation** - Vendor-to-Client contract with activation requirement  
+✅ **F2: Risk Scoring (ConScore)** - AI-inspired 0-100 scoring with risk tiers  
+✅ **F3: Proof Verification** - Evidence-based validation + manual fallback  
+✅ **F4: Settlement Logic** - On-time/delayed/default flows with pool integration  
+✅ **F5: Investor Pool** - Mutual-fund style Unit/NAV (RBI/SEBI compliant)  
+✅ **F6: Recovery** - Client payment recovery with NAV adjustments  
+✅ **F7: Reporting** - Vendor/Client/Investor/Pool metrics  
+✅ **F8: Dashboards** - RBAC UI (Frontend)  
+✅ **F9: Notifications** - Silent-fail messaging  
+✅ **F10: Database** - Complete Prisma schema  
+
+---
+
 ## Deployment
 
 ### Deploy to Vercel
@@ -119,6 +155,8 @@ See [DATABASE_SETUP.md](./DATABASE_SETUP.md) for full guide.
 2. **Add Environment Variables**:
    - `DATABASE_URL` - Your PostgreSQL connection string
 3. **Deploy**: Auto-deploys on push to `main`
+
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for complete deployment guide.
 
 ### Environment Variables
 
@@ -133,14 +171,18 @@ Required for Vercel deployment:
 ## Project Structure
 
 ```
-contrack/
+ConTrack/
 ├── api/                    # Vercel serverless functions
 │   ├── auth.ts            # User authentication
-│   └── contracts.ts       # Contract CRUD operations
+│   ├── contracts.ts       # Contract CRUD operations
+│   └── health.ts          # Database health check
 ├── components/            # React components
 │   ├── Hero.tsx          # Landing page hero
 │   ├── ContractCreationModal.tsx  # Contract form
 │   ├── ClientDashboard.tsx        # Client view
+│   ├── VendorDashboard.tsx        # Vendor view
+│   ├── InvestorDashboard.tsx      # Investor view
+│   ├── PaymentTracker.tsx         # Payment tracking
 │   └── ...
 ├── lib/                   # Utilities
 │   └── prisma.ts         # Prisma client singleton
@@ -252,6 +294,16 @@ Get all contracts for user.
 - Recent contracts list with status badges
 - Loading states and error handling
 
+### 4. Event-Driven Architecture
+
+All actions create `Event` records:
+- `CONTRACT_CREATED`
+- `PAYMENT_SCHEDULE_CREATED`
+- `CONTRACT_ACTIVATED`
+- `PAYMENT_COMPLETED`
+
+Events provide audit trail and enable future notifications.
+
 ---
 
 ## Development
@@ -283,35 +335,15 @@ npm run build
 
 ---
 
-## Architecture
+## Usage (Backend Packages)
 
-### Frontend → API → Database Flow
+Each package exports functions that can be imported and used:
 
+```typescript
+import { validateCreateContract } from '@contrack/intake';
+import { investInPool } from '@contrack/investor-pool';
+import { settleContract } from '@contrack/settlement';
 ```
-User Action (Create Contract)
-    ↓
-ContractCreationModal validates form
-    ↓
-POST /api/contracts with data
-    ↓
-Serverless function receives request
-    ↓
-Prisma creates Contract + PaymentSchedules + Events
-    ↓
-Returns contract data
-    ↓
-Dashboard refreshes and displays new contract
-```
-
-### Event-Driven Architecture
-
-All actions create `Event` records:
-- `CONTRACT_CREATED`
-- `PAYMENT_SCHEDULE_CREATED`
-- `CONTRACT_ACTIVATED`
-- `PAYMENT_COMPLETED`
-
-Events provide audit trail and enable future notifications.
 
 ---
 
@@ -347,6 +379,8 @@ MIT License - see LICENSE file for details
 - [ ] PDF generation
 - [ ] Multi-currency support
 - [ ] Mobile app (React Native)
+- [ ] Enhanced analytics dashboard
+- [ ] Automated risk scoring improvements
 
 ---
 

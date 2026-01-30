@@ -1,0 +1,16 @@
+{
+    "name": "@contrack/intake",
+    "version": "0.0.1",
+    "main": "index.ts",
+    "scripts": {
+        "test": "echo \"No tests yet\""
+    },
+    "dependencies": {
+        "zod": "^3.22.4",
+        "@contrack/database": "*"
+    },
+    "devDependencies": {
+        "typescript": "^5.7.3",
+        "@types/node": "^22.13.1"
+    }
+}

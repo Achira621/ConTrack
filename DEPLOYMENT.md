@@ -1,39 +1,12 @@
-# ConTrack Platform - Deployment Guide
+# ConTrack Frontend - Vercel Deployment Guide
 
-## 📦 Repositories
+## � Quick Deploy to Vercel
 
-- **Backend**: [https://github.com/Achira621/ConTrack.git](https://github.com/Achira621/ConTrack.git)
-- **Frontend**: `d:/hackathon/frontend/contrack` (to be deployed separately)
-
----
-
-## 🚀 Quick Start
-
-### 1. Backend Setup
-
-```bash
-# Clone the repository
-git clone https://github.com/Achira621/ConTrack.git
-cd ConTrack
-
-# Install dependencies
-npm install
-
-# Setup database
-cd packages/database
-cp .env.example .env
-# Edit .env with your PostgreSQL connection string
-npx prisma generate
-npx prisma db push
-```
-
-### 2. Frontend Setup
-
-```bash
-cd d:/hackathon/frontend/contrack
-npm install
-npm run dev
-```
+### Prerequisites
+- [ ] Vercel account (free tier works fine) - [Sign up here](https://vercel.com/signup)
+- [ ] GitHub account (recommended for continuous deployment)
+- [ ] Node.js 18+ installed locally (for testing builds)
+- [ ] PostgreSQL database (Neon/Supabase/Vercel Postgres)
 
 ---
 
@@ -46,7 +19,7 @@ Choose one of these free PostgreSQL providers:
 2. Create free account
 3. Create new project
 4. Copy connection string
-5. Paste in `packages/database/.env`:
+5. Add to Vercel environment variables:
    ```
    DATABASE_URL="postgresql://user:pass@host/dbname?sslmode=require"
    ```
@@ -56,130 +29,286 @@ Choose one of these free PostgreSQL providers:
 2. Create project
 3. Go to Settings → Database
 4. Copy "Connection string" (Direct connection)
-5. Update `.env`
+5. Add to environment variables
 
 ### Option C: Vercel Postgres
-1. Install Vercel CLI: `npm i -g vercel`
-2. Run `vercel postgres create`
-3. Link to project
-4. Environment variable auto-configured
+1. In Vercel dashboard, go to Storage → Create Database
+2. Select Postgres
+3. Connection string auto-configured
 
 ---
 
-## 🔧 Vercel Deployment
+## Option 1: Deploy via Vercel Dashboard (Recommended)
 
-### Backend (Serverless Functions)
+### Step 1: Push to GitHub
+```bash
+cd d:\hackathon\ConTrack
 
-1. Create `vercel.json` in root:
-```json
-{
-  "version": 2,
-  "builds": [
-    {
-      "src": "packages/*/index.ts",
-      "use": "@vercel/node"
-    }
-  ]
-}
+# Initialize git if not already done
+git init
+
+# Add all files
+git add .
+
+# Commit
+git commit -m "Initial ConTrack deployment"
+
+# Create a new repo on GitHub, then:
+git remote add origin https://github.com/Achira621/ConTrack.git
+git branch -M main
+git push -u origin main
 ```
 
-2. Deploy:
+### Step 2: Import to Vercel
+1. Go to [vercel.com/new](https://vercel.com/new)
+2. Click **"Import Git Repository"**
+3. Select your `ConTrack` repository
+4. Configure project:
+   - **Framework Preset**: Vite
+   - **Root Directory**: `./` (leave as default)
+   - **Build Command**: `prisma generate && npm run build`
+   - **Output Directory**: `dist`
+
+### Step 3: Add Environment Variables
+1. Go to **Settings** → **Environment Variables**
+2. Add:
+   - **Name**: `DATABASE_URL`
+   - **Value**: Your PostgreSQL connection string
+   - **Environment**: Production, Preview, Development
+
+### Step 4: Deploy
+1. Click **"Deploy"**
+2. Wait 1-2 minutes for build to complete
+3. Your app will be live at `https://your-project-name.vercel.app`
+
+---
+
+## Option 2: Deploy via Vercel CLI
+
+### Step 1: Install Vercel CLI
 ```bash
+npm install -g vercel
+```
+
+### Step 2: Login to Vercel
+```bash
+vercel login
+```
+
+### Step 3: Deploy
+```bash
+cd d:\hackathon\ConTrack
+
+# First deployment (interactive)
+vercel
+
+# Follow prompts:
+# - Set up and deploy? Yes
+# - Which scope? Your account
+# - Link to existing project? No
+# - Project name? contrack (or your choice)
+# - Directory? ./ (just press Enter)
+# - Override build settings? No
+
+# For production deployment:
 vercel --prod
 ```
 
-3. Set environment variables in Vercel dashboard:
-   - `DATABASE_URL`
+---
 
-### Frontend
+## 📋 Pre-Deployment Checklist
+
+Before deploying, ensure:
+
+- [x] **index.css exists** - ✅ Created
+- [x] **vercel.json configured** - ✅ Created
+- [x] **.vercelignore added** - ✅ Created
+- [ ] **Database URL configured** - Set in Vercel environment variables
+- [ ] **Build works locally** - Run `npm run build` to verify
+- [ ] **No TypeScript errors** - Run `npm run build` (Vite will report errors)
+
+---
+
+## 🧪 Test Build Locally (Recommended)
+
+Before deploying, test the production build:
 
 ```bash
-cd d:/hackathon/frontend/contrack
-vercel --prod
+# Navigate to project
+cd d:\hackathon\ConTrack
+
+# Install dependencies (if not already done)
+npm install
+
+# Build for production
+npm run build
+
+# Preview the production build
+npm run preview
 ```
+
+If the build succeeds and preview works, you're ready to deploy!
 
 ---
 
-## ✅ Post-Deployment Checklist
+## 🎨 What Gets Deployed
 
-- [ ] Database connected and migrations applied
-- [ ] Backend API endpoints accessible
-- [ ] Frontend loads and shows login screen
-- [ ] Role selection works (Client/Vendor/Investor)
-- [ ] Dashboards render for each role
-- [ ] No console errors
+Your deployment will include:
+- ✅ Landing page with Hero, Features, Testimonials
+- ✅ Login/Authentication flow
+- ✅ Client Dashboard (white theme, green accents)
+- ✅ Vendor Dashboard
+- ✅ Investor Dashboard
+- ✅ **Payment Tracking System** with milestones
+- ✅ **Payment Schedule Timeline View**
+- ✅ **Payment History**
+- ✅ **Contract Creation** with database persistence
+- ✅ Interactive Payment Demo (accessible via "Watch Demo" button)
+- ✅ Database connection via Prisma + PostgreSQL
 
 ---
 
-## 🧪 Testing Flows
+## 🔧 Troubleshooting
 
-### 1. Investor Pool Flow
-```typescript
-// 1. Create Pool
-POST /api/pools
-{ name: "Test Pool", riskCategory: "MEDIUM_RISK" }
+### Build Fails on Vercel
 
-// 2. Invest
-POST /api/pools/:poolId/invest
-{ investorId: "...", amount: 1000 }
+**Error**: `Cannot find module 'index.css'`
+- **Fix**: Ensure `index.css` exists in the root directory (should already be there)
 
-// 3. Check NAV
-GET /api/pools/:poolId
+**Error**: `TypeScript errors`
+- **Fix**: Run `npm run build` locally to see specific errors
+- Common fix: Add `"skipLibCheck": true` to `tsconfig.json`
+
+**Error**: `Prisma client not generated`
+- **Fix**: Ensure build command includes `prisma generate`
+- Vercel build command should be: `prisma generate && npm run build`
+
+### Preview Loads but Shows Blank Page
+
+**Cause**: React Router or SPA routing issue
+- **Fix**: Already handled in `vercel.json` with rewrite rules
+
+### Database Connection Errors
+
+**Error**: `P1001: Can't reach database server`
+- **Fix**: Verify `DATABASE_URL` is correctly set in Vercel environment variables
+- **Fix**: Ensure database allows connections from all IPs (0.0.0.0/0) or Vercel's IP ranges
+
+**Error**: `SSL connection required`
+- **Fix**: Add `?sslmode=require` to your connection string
+
+---
+
+## 🌐 Post-Deployment
+
+### Accessing Your App
+After deployment, you'll get a URL like:
 ```
+https://contrack-xyz123.vercel.app
+```
+
+### Custom Domain (Optional)
+1. Go to your project settings in Vercel
+2. Navigate to **Domains**
+3. Add your custom domain
+4. Follow DNS configuration instructions
+
+### Continuous Deployment
+Every push to your `main` branch will automatically trigger a new deployment!
+
+---
+
+## ✅ Post-Deployment Verification
+
+Test these flows after deployment:
+
+### 1. Authentication
+- [ ] Login as CLIENT
+- [ ] Login as VENDOR
+- [ ] Login as INVESTOR
 
 ### 2. Contract Flow
-```typescript
-// 1. Create Contract (Client)
-POST /api/contracts
-{ title: "...", value: 5000, clientId: "..." }
+- [ ] Create new contract with milestones
+- [ ] View contract in dashboard
+- [ ] Verify payment schedules are created
 
-// 2. Create Exposure (Pool underwrites)
-POST /api/exposures
-{ poolId: "...", contractId: "...", exposureAmount: 5000 }
-
-// 3. Settle Contract
-POST /api/contracts/:contractId/settle
-```
+### 3. Database Connection
+- [ ] Check Vercel logs for database connection status
+- [ ] Verify contracts are persisted in database
+- [ ] Open Prisma Studio locally: `npx prisma studio`
 
 ---
 
-## 📊 Architecture Verification
+## 📊 Monitoring
 
-Test fault tolerance:
-1. Stop database → Frontend should show "Offline" state
-2. Invalid input → Intake layer rejects with artifact
-3. Pool exposure > available capital → Error returned, no crash
-
----
-
-## 🔐 Environment Variables
-
-### Backend
-```env
-DATABASE_URL="postgresql://..."
-NODE_ENV="production"
-```
-
-### Frontend
-```env
-VITE_API_URL="https://your-backend.vercel.app"
-```
+Vercel provides:
+- **Analytics** - Page views, visitor data
+- **Speed Insights** - Core Web Vitals
+- **Logs** - Runtime and build logs (check for database errors)
+- **Previews** - Each PR gets a unique preview URL
 
 ---
 
-## 🆘 Troubleshooting
+## 🔐 Environment Variables Reference
 
-**Prisma errors**: Run `npx prisma generate` after install  
-**Connection refused**: Check DATABASE_URL format  
-**CORS errors**: Add frontend URL to backend CORS whitelist  
-**Build fails**: Ensure all TypeScript configs are valid
+### Required
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `DATABASE_URL` | PostgreSQL connection string | `postgresql://user:pass@host/db` |
+
+### Optional
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `NODE_ENV` | Environment mode | `production` |
 
 ---
 
-## 📝 Next Steps
+## � Common Issues
 
-1. **API Layer**: Create REST/tRPC endpoints for each package
-2. **Frontend Integration**: Wire dashboards to real API calls
-3. **Authentication**: Add JWT/OAuth for real auth
-4. **Testing**: Write unit + integration tests
-5. **Monitoring**: Add logging service (Sentry/LogRocket)
+### "Database connection unavailable"
+- Verify `DATABASE_URL` is set in Vercel
+- Check database provider allows external connections
+- Verify SSL mode if required
+
+### "Prisma Client not initialized"
+- Ensure `postinstall` script runs: `"postinstall": "prisma generate"`
+- Or add to build command: `prisma generate && npm run build`
+
+### CORS Errors
+- API routes already handle CORS in `api/contracts.ts`
+- Verify `Access-Control-Allow-Origin` headers
+
+---
+
+## 📝 Next Steps After Deployment
+
+1. **Share the link** with your team/stakeholders
+2. **Test all features**:
+   - Login as CLIENT, VENDOR, INVESTOR
+   - Create a contract
+   - Test payment milestones
+   - Mark payments as paid
+3. **Monitor performance** via Vercel dashboard
+4. **Check database** via Prisma Studio or database provider dashboard
+5. **Iterate** based on feedback
+
+---
+
+## 📞 Need Help?
+
+- **Vercel Docs**: [vercel.com/docs](https://vercel.com/docs)
+- **Vite Deployment**: [vitejs.dev/guide/static-deploy](https://vitejs.dev/guide/static-deploy)
+- **Prisma Docs**: [prisma.io/docs](https://prisma.io/docs)
+
+---
+
+## ✅ You're All Set!
+
+The ConTrack platform is now ready for Vercel deployment with full database integration. All required files have been created:
+- ✅ `index.css` (styling)
+- ✅ `vercel.json` (deployment config)
+- ✅ `.vercelignore` (optimize deployment)
+- ✅ `prisma/schema.prisma` (database schema)
+- ✅ `api/` endpoints (serverless functions)
+
+**Ready to deploy! 🚀**

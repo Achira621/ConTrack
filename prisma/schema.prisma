@@ -1,0 +1,165 @@
+// Prisma schema for ConTrack frontend
+// This links to the main database schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model
+enum UserRole {
+  CLIENT
+  VENDOR
+  INVESTOR
+  ADMIN
+}
+
+model User {
+  id            String       @id @default(cuid())
+  email         String       @unique
+  name          String?
+  role          UserRole
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  clientContracts   Contract[]  @relation("ClientContracts")
+  vendorContracts   Contract[]  @relation("VendorContracts")
+  events            Event[]
+}
+
+// Contract model
+enum ContractStatus {
+  DRAFT
+  ACTIVE
+  IN_VERIFICATION
+  SETTLED
+  DISPUTED
+  CANCELLED
+}
+
+model Contract {
+  id                String           @id @default(cuid())
+  title             String
+  description       String?
+  value             Float
+  status            ContractStatus   @default(DRAFT)
+  
+  clientId          String
+  client            User             @relation("ClientContracts", fields: [clientId], references: [id])
+  
+  vendorId          String?
+  vendor            User?            @relation("VendorContracts", fields: [vendorId], references: [id])
+  
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  
+  settledAt         DateTime?
+  settlementAmount  Float?
+  
+  totalPaid         Float            @default(0)
+  remainingAmount   Float?
+  
+  events            Event[]
+  paymentSchedules  PaymentSchedule[]
+  payments          Payment[]
+}
+
+// Payment Schedule model
+model PaymentSchedule {
+  id              String    @id @default(cuid())
+  contractId      String
+  contract        Contract  @relation(fields: [contractId], references: [id])
+  
+  milestoneName   String
+  description     String?
+  amount          Float
+  percentage      Float
+  dueDate         DateTime?
+  order           Int
+  
+  createdAt       DateTime  @default(now())
+  
+  payments        Payment[]
+  
+  @@index([contractId])
+}
+
+// Payment model
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REFUNDED
+  CANCELLED
+}
+
+model Payment {
+  id                String          @id @default(cuid())
+  contractId        String
+  contract          Contract        @relation(fields: [contractId], references: [id])
+  
+  scheduleId        String?
+  schedule          PaymentSchedule? @relation(fields: [scheduleId], references: [id])
+  
+  amount            Float
+  status            PaymentStatus   @default(PENDING)
+  
+  payerId           String
+  payeeId           String
+  
+  paymentMethod     String?
+  transactionId     String?
+  
+  paidAt            DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  
+  metadata          Json?
+  
+  @@index([contractId, status])
+  @@index([payerId])
+  @@index([payeeId])
+}
+
+// Event model
+enum EventType {
+  CONTRACT_CREATED
+  CONTRACT_ACTIVATED
+  CONTRACT_SETTLED
+  EXPOSURE_CREATED
+  EXPOSURE_SETTLED
+  EXPOSURE_DEFAULTED
+  POOL_INVESTMENT
+  POOL_REDEMPTION
+  NAV_UPDATED
+  PAYMENT_CREATED
+  PAYMENT_COMPLETED
+  PAYMENT_FAILED
+  PAYMENT_SCHEDULE_CREATED
+  MILESTONE_REACHED
+  USER_ACTION
+  SYSTEM_ERROR
+}
+
+model Event {
+  id                String      @id @default(cuid())
+  type              EventType
+  
+  userId            String?
+  user              User?       @relation(fields: [userId], references: [id])
+  
+  contractId        String?
+  contract          Contract?   @relation(fields: [contractId], references: [id])
+  
+  metadata          Json?
+  
+  timestamp         DateTime    @default(now())
+  
+  @@index([type, timestamp])
+  @@index([userId])
+}

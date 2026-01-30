@@ -1,18 +1,27 @@
 {
-    "name": "contrack-backend",
-    "version": "0.0.1",
-    "private": true,
-    "workspaces": [
-        "packages/*"
-    ],
-    "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1"
-    },
-    "keywords": [],
-    "author": "",
-    "license": "ISC",
-    "description": "Backend monorepo for ConTrack Platform",
-    "devDependencies": {
-        "@vercel/node": "^5.5.28"
-    }
+  "name": "contrack",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "postinstall": "prisma generate"
+  },
+  "dependencies": {
+    "react-dom": "^19.2.3",
+    "framer-motion": "^12.26.2",
+    "lucide-react": "^0.562.0",
+    "react": "^19.2.3",
+    "@prisma/client": "^6.3.1",
+    "prisma": "^6.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "typescript": "~5.8.2",
+    "vite": "^6.2.0",
+    "@vercel/node": "^3.0.0"
+  }
 }

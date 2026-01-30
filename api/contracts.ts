@@ -1,8 +1,10 @@
-// Updated contracts endpoint with database health check
-import { prisma } from '../packages/database';
-import { ensureDatabaseConnection } from './middleware/database-check';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+import prisma, { checkDatabaseConnection } from '../lib/prisma';
 
-export default async function handler(req, res) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+    // Set JSON content type
+    res.setHeader('Content-Type', 'application/json');
+
     // Enable CORS
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -13,83 +15,226 @@ export default async function handler(req, res) {
     );
 
     if (req.method === 'OPTIONS') {
-        res.status(200).end();
-        return;
+        return res.status(200).end();
     }
 
-    if (req.method !== 'GET') {
-        return res.status(405).json({ error: 'Method not allowed' });
+    // Validate database connection before processing requests
+    const dbCheck = await checkDatabaseConnection();
+    if (!dbCheck.connected) {
+        console.error('Database connection failed:', dbCheck.error);
+        return res.status(503).json({
+            success: false,
+            error: 'Database connection unavailable',
+            details: process.env.NODE_ENV === 'development' ? dbCheck.error : undefined,
+        });
     }
 
-    // Use database check middleware
-    await ensureDatabaseConnection(req, res, async () => {
-        try {
-            const { userId } = req.query;
+    try {
+        if (req.method === 'POST') {
+            // Create new contract
+            const { title, description, clientId, vendorEmail, value, milestones } = req.body;
 
-            if (!userId) {
-                return res.status(400).json({ error: 'userId is required' });
+            // Validation
+            if (!title || title.length < 3) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Title is required (minimum 3 characters)'
+                });
             }
 
-            // Fetch contracts where user is either client or vendor
-            const contracts = await prisma.contract.findMany({
-                where: {
-                    OR: [
-                        { clientId: userId },
-                        { vendorId: userId }
-                    ]
+            if (!clientId) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Client ID is required'
+                });
+            }
+
+            if (!value || parseFloat(value) <= 0) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Contract value must be greater than 0'
+                });
+            }
+
+            // Find or create vendor by email
+            let vendor = null;
+            if (vendorEmail) {
+                vendor = await prisma.user.upsert({
+                    where: { email: vendorEmail },
+                    create: {
+                        email: vendorEmail,
+                        role: 'VENDOR',
+                        name: vendorEmail.split('@')[0],
+                    },
+                    update: {},
+                });
+            }
+
+            // Create contract
+            const contract = await prisma.contract.create({
+                data: {
+                    title,
+                    description: description || null,
+                    value: parseFloat(value),
+                    status: 'DRAFT',
+                    clientId,
+                    vendorId: vendor?.id || null,
+                    remainingAmount: parseFloat(value),
                 },
+            });
+
+            // Create payment schedules if milestones provided
+            if (milestones && milestones.length > 0) {
+                // Validate percentages
+                const totalPercentage = milestones.reduce((sum: number, m: any) => sum + (m.percentage || 0), 0);
+
+                if (Math.abs(totalPercentage - 100) > 0.01) {
+                    // Delete the contract since milestone validation failed
+                    await prisma.contract.delete({ where: { id: contract.id } });
+                    return res.status(400).json({
+                        success: false,
+                        error: `Payment milestones must sum to 100% (current: ${totalPercentage}%)`,
+                    });
+                }
+
+                // Create payment schedules
+                await Promise.all(
+                    milestones.map((milestone: any, index: number) =>
+                        prisma.paymentSchedule.create({
+                            data: {
+                                contractId: contract.id,
+                                milestoneName: milestone.name,
+                                description: milestone.description || null,
+                                amount: (parseFloat(value) * milestone.percentage) / 100,
+                                percentage: milestone.percentage,
+                                dueDate: milestone.dueDate ? new Date(milestone.dueDate) : null,
+                                order: index + 1,
+                            },
+                        })
+                    )
+                );
+
+                // Create event
+                await prisma.event.create({
+                    data: {
+                        type: 'PAYMENT_SCHEDULE_CREATED',
+                        contractId: contract.id,
+                        userId: clientId,
+                        metadata: {
+                            milestoneCount: milestones.length,
+                        },
+                    },
+                });
+            }
+
+            // Create contract creation event
+            await prisma.event.create({
+                data: {
+                    type: 'CONTRACT_CREATED',
+                    contractId: contract.id,
+                    userId: clientId,
+                    metadata: {
+                        title: contract.title,
+                        value: contract.value,
+                    },
+                },
+            });
+
+            // Fetch contract with relations
+            const fullContract = await prisma.contract.findUnique({
+                where: { id: contract.id },
                 include: {
+                    paymentSchedules: true,
                     client: {
                         select: {
                             id: true,
-                            name: true,
                             email: true,
-                            role: true
-                        }
+                            name: true,
+                        },
                     },
                     vendor: {
                         select: {
                             id: true,
-                            name: true,
                             email: true,
-                            role: true
-                        }
+                            name: true,
+                        },
+                    },
+                },
+            });
+
+            return res.status(201).json({
+                success: true,
+                contract: fullContract,
+            });
+        } else if (req.method === 'GET') {
+            // Get contracts for user
+            const { userId } = req.query;
+
+            if (!userId || typeof userId !== 'string') {
+                return res.status(400).json({
+                    success: false,
+                    error: 'User ID is required'
+                });
+            }
+
+            const contracts = await prisma.contract.findMany({
+                where: {
+                    OR: [
+                        { clientId: userId },
+                        { vendorId: userId },
+                    ],
+                },
+                include: {
+                    paymentSchedules: {
+                        orderBy: { order: 'asc' },
                     },
                     payments: {
-                        select: {
-                            id: true,
-                            amount: true,
-                            status: true,
-                            paidAt: true
-                        }
+                        where: { status: 'COMPLETED' },
                     },
-                    paymentSchedules: {
+                    client: {
                         select: {
                             id: true,
-                            milestoneName: true,
-                            amount: true,
-                            percentage: true,
-                            dueDate: true
-                        }
-                    }
+                            email: true,
+                            name: true,
+                        },
+                    },
+                    vendor: {
+                        select: {
+                            id: true,
+                            email: true,
+                            name: true,
+                        },
+                    },
                 },
-                orderBy: {
-                    createdAt: 'desc'
-                }
+                orderBy: { createdAt: 'desc' },
             });
 
             return res.status(200).json({
                 success: true,
-                contracts,
-                count: contracts.length
+                contracts
             });
-        } catch (error) {
-            console.error('Error fetching contracts:', error);
-            return res.status(500).json({
+        } else {
+            return res.status(405).json({
                 success: false,
-                error: error.message || 'Failed to fetch contracts',
-                details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+                error: 'Method not allowed'
             });
         }
-    });
+    } catch (error) {
+        console.error('API Error:', error);
+
+        // Log detailed error information for debugging
+        if (error instanceof Error) {
+            console.error('Error name:', error.name);
+            console.error('Error message:', error.message);
+            console.error('Error stack:', error.stack);
+        }
+
+        // Always return valid JSON
+        return res.status(500).json({
+            success: false,
+            error: error instanceof Error ? error.message : 'Internal server error',
+            errorType: error instanceof Error ? error.name : 'UnknownError',
+            timestamp: new Date().toISOString(),
+        });
+    }
 }
